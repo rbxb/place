@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"net/http"
 	"strconv"
+	"sync"
 )
 
 type event struct {
@@ -15,21 +16,20 @@ type event struct {
 }
 
 type PlaceServer struct {
+	sync.Mutex
 	img     *rgbImage
 	events  []event
 	current int
-	pngData string
-	pngID   int
+	imgBuf  []byte
 	queue   chan byte
-	lock    chan byte
 }
 
 func NewPlaceServer(width, height, history int) *PlaceServer {
 	return &PlaceServer{
+		Mutex:  sync.Mutex{},
 		img:    newRGBAImage(width, height),
 		events: make([]event, history),
 		queue:  make(chan byte),
-		lock:   make(chan byte, 1),
 	}
 }
 
@@ -44,14 +44,22 @@ func (sv *PlaceServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (sv *PlaceServer) ServeImage(w http.ResponseWriter) {
+	if sv.imgBuf == nil {
+		sv.imgBuf = sv.createImgBuf()
+	}
+	w.Header().Set("Content-Type", "image/png")
+	w.Write(sv.imgBuf)
+}
+
 func (sv *PlaceServer) handleGet(w http.ResponseWriter, req *http.Request) {
 	str := req.URL.Query().Get("id")
 	id, _ := strconv.Atoi(str)
-	sv.lock <- 0
+	sv.Lock()
 	if id >= sv.current && req.URL.Query().Get("wait") == "true" {
-		<-sv.lock
+		sv.Unlock()
 		sv.queue <- 0
-		sv.lock <- 0
+		sv.Lock()
 	}
 	var b []byte
 	if id < 0 || id >= sv.current || id+1 < sv.current-len(sv.events) {
@@ -59,7 +67,7 @@ func (sv *PlaceServer) handleGet(w http.ResponseWriter, req *http.Request) {
 	} else {
 		b, _ = sv.eventsData(w, id)
 	}
-	<-sv.lock
+	sv.Unlock()
 	w.Write(b)
 }
 
@@ -77,13 +85,14 @@ func (sv *PlaceServer) handlePut(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	pos := (sv.img.width*e.Y + e.X) * 4
-	sv.lock <- 0
+	sv.Lock()
 	copy(sv.img.pixels[pos:], b)
+	sv.imgBuf = nil
 	if len(sv.events) > 0 {
 		sv.events = append(sv.events[1:], e)
 		sv.current++
 	}
-	<-sv.lock
+	sv.Unlock()
 	w.WriteHeader(200)
 	sv.clearQueue()
 }
@@ -93,16 +102,16 @@ func (sv *PlaceServer) dimsOk(x, y int) bool {
 }
 
 func (sv *PlaceServer) imageData(w http.ResponseWriter) ([]byte, error) {
-	if sv.pngID != sv.current || sv.pngData == "" {
-		sv.pngData = sv.createPNG()
-		sv.pngID = sv.current
+	if sv.imgBuf == nil {
+		sv.imgBuf = sv.createImgBuf()
 	}
+	imgStr := base64.StdEncoding.EncodeToString(sv.imgBuf)
 	return json.Marshal(struct {
 		ID   int
 		Data string
 	}{
 		ID:   sv.current,
-		Data: sv.pngData,
+		Data: imgStr,
 	})
 }
 
@@ -117,12 +126,12 @@ func (sv *PlaceServer) eventsData(w http.ResponseWriter, id int) ([]byte, error)
 	})
 }
 
-func (sv *PlaceServer) createPNG() string {
+func (sv *PlaceServer) createImgBuf() []byte {
 	buf := bytes.NewBuffer(nil)
 	if err := png.Encode(buf, sv.img); err != nil {
 		panic(err)
 	}
-	return base64.StdEncoding.EncodeToString(buf.Bytes())
+	return buf.Bytes()
 }
 
 func (sv *PlaceServer) clearQueue() {
