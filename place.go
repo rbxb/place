@@ -1,4 +1,4 @@
-package main
+package placeserver
 
 import (
 	"bytes"
@@ -23,7 +23,6 @@ const (
 
 type Server struct {
 	sync.RWMutex
-	limit      chan byte
 	wait       chan http.ResponseWriter
 	img        *rgbImage
 	imgBuf     []byte
@@ -32,10 +31,9 @@ type Server struct {
 	current    int
 }
 
-func NewServer(width, height, eventCount, limitSize, waitSize int) *Server {
+func NewServer(width, height, eventCount, waitSize int) *Server {
 	return &Server{
 		RWMutex:    sync.RWMutex{},
-		limit:      make(chan byte, limitSize),
 		wait:       make(chan http.ResponseWriter, waitSize),
 		img:        newRGBImage(width, height),
 		eventBuf:   make([]byte, eventSize*eventCount+headerSize),
@@ -44,23 +42,17 @@ func NewServer(width, height, eventCount, limitSize, waitSize int) *Server {
 }
 
 func (sv *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	select {
-	case sv.limit <- 0:
-		if path.Base(req.URL.Path) == "place.png" {
-			sv.ServeImage(w, req)
-		} else {
-			switch req.Method {
-			case "GET":
-				sv.handleGet(w, req)
-			case "PUT":
-				sv.handlePut(w, req)
-			default:
-				http.Error(w, "Bad request.", 400)
-			}
+	if path.Base(req.URL.Path) == "place.png" {
+		sv.ServeImage(w, req)
+	} else {
+		switch req.Method {
+		case "GET":
+			sv.handleGet(w, req)
+		case "PUT":
+			sv.handlePut(w, req)
+		default:
+			http.Error(w, "Bad request.", 400)
 		}
-		<-sv.limit
-	default:
-		http.Error(w, "Service unvailable.", 503)
 	}
 }
 
@@ -91,10 +83,6 @@ func (sv *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 	}
 	sv.RUnlock()
 	w.Write(b)
-}
-
-func (sv *Server) getRespond(w http.ResponseWriter) {
-
 }
 
 func (sv *Server) handlePut(w http.ResponseWriter, req *http.Request) {
