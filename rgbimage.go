@@ -10,14 +10,11 @@ type rgbImage struct {
 	width, height int
 }
 
-func newRGBAImage(width, height int) *rgbImage {
+func newRGBImage(width, height int) *rgbImage {
 	img := &rgbImage{
 		width:  width,
 		height: height,
-		pixels: make([]byte, width*height*4),
-	}
-	for i := 3; i < len(img.pixels); i += 4 {
-		img.pixels[i] = 0xFF
+		pixels: make([]byte, width*height*3),
 	}
 	return img
 }
@@ -34,11 +31,16 @@ func (img *rgbImage) Bounds() image.Rectangle {
 }
 
 func (img *rgbImage) At(x, y int) color.Color {
-	pos := (img.width*y + x) * 4
+	pos := (img.width*y + x) * 3
 	return color.NRGBA{
 		R: img.pixels[pos+0],
 		G: img.pixels[pos+1],
 		B: img.pixels[pos+2],
-		A: img.pixels[pos+3],
+		A: 0xFF,
 	}
+}
+
+func (img *rgbImage) Set(x, y int, b []byte) {
+	pos := (img.width*y + x) * 3
+	copy(img.pixels[pos:], b)
 }
