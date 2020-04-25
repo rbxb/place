@@ -24,7 +24,7 @@ const (
 type Server struct {
 	sync.RWMutex
 	wait       chan http.ResponseWriter
-	img        *rgbImage
+	img        *placeImage
 	imgBuf     []byte
 	eventBuf   []byte
 	eventCount int
@@ -35,7 +35,7 @@ func NewServer(width, height, eventCount, waitSize int) *Server {
 	return &Server{
 		RWMutex:    sync.RWMutex{},
 		wait:       make(chan http.ResponseWriter, waitSize),
-		img:        newRGBImage(width, height),
+		img:        newPlaceImage(width, height),
 		eventBuf:   make([]byte, eventSize*eventCount+headerSize),
 		eventCount: eventCount,
 	}
