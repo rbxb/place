@@ -3,10 +3,10 @@ package main
 import (
 	"net/http"
 
-	"github.com/rbxb/placeserver"
+	"github.com/rbxb/placeserver/ws"
 )
 
 func main() {
-	sv := placeserver.NewServer(512, 512, 32, 32)
-	http.ListenAndServe(":8080", sv)
+	sv := ws.NewServer(512, 512, 64)
+	http.ListenAndServe(":8081", sv)
 }
