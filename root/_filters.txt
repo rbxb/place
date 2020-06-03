@@ -1,0 +1,4 @@
+#pseudo 
+	desktop desktop.html
+	home home.html
+	wsaddr wsaddr.txt

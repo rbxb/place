@@ -1,0 +1,12 @@
+* {
+	padding: 0;
+	margin: 0;
+}
+
+p, a {
+	margin-top: 10px;
+}
+
+a {
+	display: block;
+}
