@@ -49,7 +49,7 @@ func main() {
 	go func() {
 		for {
 			ioutil.WriteFile(savePath, sv.GetImageBytes(), 0644)
-			log.Println("plceserver autosaved")
+			log.Println("autosaved")
 			time.Sleep(time.Second * time.Duration(saveInterval))
 		}
 	}()
