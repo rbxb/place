@@ -23,7 +23,8 @@ const (
 
 type Server struct {
 	sync.RWMutex
-	wait       chan http.ResponseWriter
+	wait       chan byte
+	waitResp   chan []byte
 	img        *placeImage
 	imgBuf     []byte
 	eventBuf   []byte
@@ -34,7 +35,8 @@ type Server struct {
 func NewServer(width, height, eventCount, waitSize int) *Server {
 	return &Server{
 		RWMutex:    sync.RWMutex{},
-		wait:       make(chan http.ResponseWriter, waitSize),
+		wait:       make(chan byte, waitSize),
+		waitResp:   make(chan []byte),
 		img:        newPlaceImage(width, height),
 		eventBuf:   make([]byte, eventSize*eventCount+headerSize),
 		eventCount: eventCount,
@@ -62,17 +64,13 @@ func (sv *Server) ServeImage(w http.ResponseWriter, req *http.Request) {
 
 func (sv *Server) handleGet(w http.ResponseWriter, req *http.Request) {
 	query := req.URL.Query()
-	str := query.Get("i")
-	start, _ := strconv.Atoi(str)
+	start, _ := strconv.Atoi(query.Get("i"))
 	sv.RLock()
 	count := sv.current - start
 	if count <= 0 {
 		sv.RUnlock()
-		select {
-		case sv.wait <- w:
-		default:
-			http.Error(w, "Service unvailable.", 503)
-		}
+		sv.wait <- 0
+		w.Write(<-sv.waitResp)
 		return
 	}
 	var b []byte
