@@ -8,7 +8,13 @@ function Place(cvs, glWindow) {
 				connect(addr);
 				return fetch("http://" + addr + "/place.png")
 			})
-			.then(resp => resp.arrayBuffer())
+			.then(resp => {
+				if (!resp.ok) {
+					alert("Failed to connect.");
+					return;
+				}
+				return resp.arrayBuffer();
+			})
 			.then(buf => {
 				setImage(new Uint8Array(buf));
 				for (var i = 0; i < queue.length; i++) {
@@ -29,6 +35,7 @@ function Place(cvs, glWindow) {
 			socket = null;
 		});
 		socket.addEventListener("error", function(event) {
+			alert("Failed to connect.");
 			socket.close();
 		});
 	};
@@ -41,7 +48,10 @@ function Place(cvs, glWindow) {
 				b[8+i] = color[i];
 			}
 			socket.send(b);
+			glWindow.placePixel(x, y, color);
+			glWindow.draw();
 		} else {
+			alert("Disconnected.");
 			console.error("Not connected.");
 		}
 	};
