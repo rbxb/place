@@ -116,7 +116,15 @@ func (sv *Server) readLoop(conn *websocket.Conn, ch chan []byte, i int) {
 	limiter := rateLimiter()
 	for {
 		_, p, err := conn.ReadMessage()
-		if err != nil || !limiter() || sv.handleMessage(p) != nil {
+		if err != nil {
+			break
+		}
+		if !limiter() {
+			log.Println("client kicked for high rate")
+			break
+		}
+		if sv.handleMessage(p) != nil {
+			log.Println("client kicked for bad message")
 			break
 		}
 	}
@@ -150,6 +158,7 @@ func (sv *Server) broadcast(p []byte) {
 			case ch <- p:
 			default:
 				close(ch)
+				log.Println("client kicked for being slow")
 			}
 		}
 	}
