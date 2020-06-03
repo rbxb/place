@@ -66,7 +66,7 @@ function main() {
 				var hex = "#";
 				for (var i = 0; i < color.length; i++) {
 					var d = color[i].toString(16);
-					if (d.length == 1) d += "0";
+					if (d.length == 1) d = "0" + d;
 					hex += d;
 				}
 				colorField.value = hex.toUpperCase();
