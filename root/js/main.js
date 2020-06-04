@@ -74,7 +74,13 @@ function main() {
 			} else if (ev.button == 2) {
 				const pos = glWindow.click(ev);
 				if (pos) {
-					place.put(pos.x, pos.y, color);
+					const oldColor = glWindow.getColor(pos);
+					for (var i = 0; i < oldColor.length; i++) {
+						if (oldColor[i] != color[i]) {
+							place.put(pos.x, pos.y, color);
+							break;
+						}
+					}
 				}
 			}
 		});
