@@ -1,21 +1,32 @@
 function Place(cvs, glWindow) {
 	var queue = [];
 	var socket = null;
+	var loadingp = document.querySelector("#loading-p");
 	this.init = function() {
+		loadingp.innerHTML = "getting ip";
 		fetch("./wsaddr")
-			.then(resp => resp.text())
+			.then(resp => {
+				if (!resp.ok) {
+					alert("Network error.");
+					return;
+				}
+				return resp.text();
+			})
 			.then(addr => {
+				loadingp.innerHTML = "connecting";
 				connect(addr);
+				loadingp.innerHTML = "downloading map";
 				return fetch("http://" + addr + "/place.png")
 			})
 			.then(resp => {
 				if (!resp.ok) {
-					alert("Failed to connect.");
+					alert("Network error.");
 					return;
 				}
 				return resp.arrayBuffer();
 			})
 			.then(buf => {
+				loadingp.innerHTML = "";
 				setImage(new Uint8Array(buf));
 				for (var i = 0; i < queue.length; i++) {
 					const pixel = queue.unshift();
@@ -35,7 +46,7 @@ function Place(cvs, glWindow) {
 			socket = null;
 		});
 		socket.addEventListener("error", function(event) {
-			alert("Failed to connect.");
+			alert("Network error.");
 			socket.close();
 		});
 	};

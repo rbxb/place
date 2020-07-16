@@ -1,6 +1,7 @@
 * {
 	padding: 0;
 	margin: 0;
+	font-family: monospace;
 }
 
 #viewport-canvas {
@@ -38,4 +39,12 @@
 	padding: 1px;
 	border: none;
 	outline: none;
+}
+
+#loading-p {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	font-size: 1.4em;
+	transform: translate(-50%,-50%);
 }
