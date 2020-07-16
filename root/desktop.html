@@ -3,14 +3,23 @@
 <head>
 	<title>Place</title>
 	<link rel="stylesheet" href="css/desktop.css" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 </head>
 <body>
 	<canvas id="viewport-canvas" oncontextmenu="return false;"></canvas>
-	<p id="loading-p"></p>
 	<div id="ui-wrapper">
+		<p id="loading-p"></p>
 		<div id="color-wrapper">
 			<div id="color-swatch"></div>
 			<input id="color-field" type="text" placeholder="#000000" value="#000000" />
+		</div>
+		<div id="zoom-wrapper">
+			<button class="zoom-button" id="zoom-out">
+				-
+			</button>
+			<button class="zoom-button" id="zoom-in">
+				+
+			</button>
 		</div>
 	</div>
 	<script src="js/main.js"></script>

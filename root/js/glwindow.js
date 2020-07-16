@@ -97,19 +97,16 @@ function GLWindow(cvs) {
 		gl.viewport(0, 0, w, h);
 		gl.uniform2f(u_view_scale, w, h);
 	};
-	this.click = function(ev) {
-		const rect = ev.target.getBoundingClientRect();
-		var pos = {
-			x: ev.clientX / rect.width,
-			y: ev.clientY / rect.height,
-		};
+	this.click = function(pos) {
+		pos.x /= cvs.width;
+		pos.y /= cvs.height;
 		const a = {
-			x: ((-0.5 * tex_scale.x - cam_pos.x) * zoom) / rect.width + 0.5,
-			y: ((-0.5 * tex_scale.y - cam_pos.y) * zoom) / rect.height + 0.5,
+			x: ((-0.5 * tex_scale.x - cam_pos.x) * zoom) / cvs.width + 0.5,
+			y: ((-0.5 * tex_scale.y - cam_pos.y) * zoom) / cvs.height + 0.5,
 		};
 		const b = {
-			x: ((0.5 * tex_scale.x - cam_pos.x) * zoom) / rect.width + 0.5,
-			y: ((0.5 * tex_scale.y - cam_pos.y) * zoom) / rect.height + 0.5,
+			x: ((0.5 * tex_scale.x - cam_pos.x) * zoom) / cvs.width + 0.5,
+			y: ((0.5 * tex_scale.y - cam_pos.y) * zoom) / cvs.height + 0.5,
 		};
 		if (pos.x < a.x || pos.y < a.y || pos.x > b.x || pos.y > b.y) {
 			return;

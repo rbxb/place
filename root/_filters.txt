@@ -1,4 +1,4 @@
 #pseudo 
-	desktop desktop.html
+	ace desktop.html
 	home home.html
 	wsaddr wsaddr.txt
