@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Place</title>
+	<link rel="stylesheet" href="css/home.css" />
+</head>
+<body align="center">
+	<div id="content-wrapper">
+		<p>The client currently works best on desktop but you can view the image on mobile.</p>
+		<a href="./desktop">Desktop Client</a>
+		<a id="image-link" href="*">place.png</a>
+		<br />
+		<br />
+		<br />
+		<a href="https://github.com/rbxb/placeserver">View project source code on GitHub</a>
+	</div>
+	<script type="text/javascript">
+		fetch("./wsaddr")
+			.then(resp => resp.text())
+			.then(addr => {
+				document.querySelector("#image-link").href = "http://" + addr + "/place.png";
+			})
+	</script>
+</body>
+</html>
