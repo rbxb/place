@@ -1,4 +1,4 @@
-package placeserver
+package place
 
 import (
 	"bytes"

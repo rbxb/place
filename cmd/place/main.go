@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/rbxb/placeserver"
+	"github.com/rbxb/place"
 )
 
 var port string
@@ -43,7 +43,7 @@ func main() {
 	} else {
 		img = loadImage(loadPath)
 	}
-	sv := placeserver.NewServer(img, count)
+	sv := place.NewServer(img, count)
 	defer ioutil.WriteFile(savePath, sv.GetImageBytes(), 0644)
 	go func() {
 		for {
