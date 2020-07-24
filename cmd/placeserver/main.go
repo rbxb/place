@@ -6,7 +6,6 @@ import (
 	"image/draw"
 	"image/png"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -49,7 +48,6 @@ func main() {
 	go func() {
 		for {
 			ioutil.WriteFile(savePath, sv.GetImageBytes(), 0644)
-			log.Println("autosaved")
 			time.Sleep(time.Second * time.Duration(saveInterval))
 		}
 	}()
