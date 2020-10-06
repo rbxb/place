@@ -16,7 +16,7 @@ function Place(cvs, glWindow) {
 				loadingp.innerHTML = "connecting";
 				connect(addr);
 				loadingp.innerHTML = "downloading map";
-				return fetch("http://" + addr + "/place.png")
+				return fetch("https://" + addr + "/place.png")
 			})
 			.then(resp => {
 				if (!resp.ok) {
@@ -37,7 +37,7 @@ function Place(cvs, glWindow) {
 			});
 	};
 	var connect = function(socketaddr) {
-		socket = new WebSocket("ws://" + socketaddr + "/ws");
+		socket = new WebSocket("wss://" + socketaddr + "/ws");
 		socket.addEventListener("message", async function(event) {
 			const b = await event.data.arrayBuffer();
     		handleResponse(b);
