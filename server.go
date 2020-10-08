@@ -23,6 +23,10 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
+	Error: func(w http.ResponseWriter, req *http.Request, status int, err error) {
+		log.Fatal(err)
+		http.Error(w, err.Error(), status)
+	},
 }
 
 type Server struct {
