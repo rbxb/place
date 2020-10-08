@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"image"
 	"image/draw"
@@ -55,12 +56,17 @@ func main() {
 			time.Sleep(time.Second * time.Duration(saveInterval))
 		}
 	}()
-	filterSv := httpfilter.NewServer(root, "", map[string]httpfilter.OpFunc{
+	fs := httpfilter.NewServer(root, "", map[string]httpfilter.OpFunc{
 		"place": func(w http.ResponseWriter, req *http.Request, args ...string) {
 			placeSv.ServeHTTP(w, req)
 		},
 	})
-	log.Fatal(http.ListenAndServe(port, filterSv))
+	server := http.Server{
+		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)), //disable HTTP/2
+		Addr:         port,
+		Handler:      fs,
+	}
+	log.Fatal(server.ListenAndServe())
 }
 
 func loadImage(loadPath string) draw.Image {
