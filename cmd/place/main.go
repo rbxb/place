@@ -6,14 +6,17 @@ import (
 	"image/draw"
 	"image/png"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/rbxb/httpfilter"
 	"github.com/rbxb/place"
 )
 
 var port string
+var root string
 var loadPath string
 var savePath string
 var width int
@@ -23,6 +26,7 @@ var saveInterval int
 
 func init() {
 	flag.StringVar(&port, "port", ":8080", "The address and port the fileserver listens at.")
+	flag.StringVar(&root, "root", "./root", "The directory serving files.")
 	flag.StringVar(&loadPath, "load", "", "The png to load as the canvas.")
 	flag.StringVar(&savePath, "save", "./place.png", "The path to save the canvas.")
 	flag.IntVar(&width, "width", 1024, "The width to create the canvas.")
@@ -43,15 +47,20 @@ func main() {
 	} else {
 		img = loadImage(loadPath)
 	}
-	sv := place.NewServer(img, count)
-	defer ioutil.WriteFile(savePath, sv.GetImageBytes(), 0644)
+	placeSv := place.NewServer(img, count)
+	defer ioutil.WriteFile(savePath, placeSv.GetImageBytes(), 0644)
 	go func() {
 		for {
-			ioutil.WriteFile(savePath, sv.GetImageBytes(), 0644)
+			ioutil.WriteFile(savePath, placeSv.GetImageBytes(), 0644)
 			time.Sleep(time.Second * time.Duration(saveInterval))
 		}
 	}()
-	http.ListenAndServe(port, sv)
+	filterSv := httpfilter.NewServer(root, "", map[string]httpfilter.OpFunc{
+		"place": func(w http.ResponseWriter, req *http.Request, args ...string) {
+			placeSv.ServeHTTP(w, req)
+		},
+	})
+	log.Fatal(http.ListenAndServe(port, filterSv))
 }
 
 func loadImage(loadPath string) draw.Image {
