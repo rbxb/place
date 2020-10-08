@@ -3,41 +3,30 @@ function Place(cvs, glWindow) {
 	var socket = null;
 	var loadingp = document.querySelector("#loading-p");
 	this.init = function() {
-		loadingp.innerHTML = "getting ip";
-		fetch("./wsaddr")
-			.then(resp => {
-				if (!resp.ok) {
-					alert("Network error.");
-					return;
-				}
-				return resp.text();
-			})
-			.then(addr => {
-				loadingp.innerHTML = "connecting";
-				connect(addr);
-				loadingp.innerHTML = "downloading map";
-				return fetch("https://" + addr + "/place.png")
-			})
-			.then(resp => {
-				if (!resp.ok) {
-					alert("Network error.");
-					return;
-				}
-				return resp.arrayBuffer();
-			})
-			.then(buf => {
-				loadingp.innerHTML = "";
-				setImage(new Uint8Array(buf));
-				for (var i = 0; i < queue.length; i++) {
-					const pixel = queue.unshift();
-					glWindow.placePixel(pixel.x, pixel.y, pixel.color);
-					glWindow.draw();
-				}
-				queue = null;
-			});
+		loadingp.innerHTML = "connecting";
+		connect("wss://" + window.location.hostname + "/ws");
+		loadingp.innerHTML = "downloading map";
+		fetch("https://" + window.location.hostname + "/place.png")
+		.then(resp => {
+			if (!resp.ok) {
+				console.error("Error downloading map.");
+				return;
+			}
+			return resp.arrayBuffer();
+		})
+		.then(buf => {
+			loadingp.innerHTML = "";
+			setImage(new Uint8Array(buf));
+			for (var i = 0; i < queue.length; i++) {
+				const pixel = queue.unshift();
+				glWindow.placePixel(pixel.x, pixel.y, pixel.color);
+				glWindow.draw();
+			}
+			queue = null;
+		});
 	};
-	var connect = function(socketaddr) {
-		socket = new WebSocket("wss://" + socketaddr + "/ws");
+	var connect = function(path) {
+		socket = new WebSocket(path);
 		socket.addEventListener("message", async function(event) {
 			const b = await event.data.arrayBuffer();
     		handleResponse(b);
@@ -46,7 +35,7 @@ function Place(cvs, glWindow) {
 			socket = null;
 		});
 		socket.addEventListener("error", function(event) {
-			alert("Network error.");
+			console.error("Error making WebSocket connection.");
 			socket.close();
 		});
 	};
@@ -63,7 +52,7 @@ function Place(cvs, glWindow) {
 			glWindow.draw();
 		} else {
 			alert("Disconnected.");
-			console.error("Not connected.");
+			console.error("Disconnected.");
 		}
 	};
 	var handleResponse = function(b) {
