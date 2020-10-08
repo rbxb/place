@@ -45,7 +45,6 @@ func NewServer(img draw.Image, count int) *Server {
 }
 
 func (sv *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	log.Println(req.Proto)
 	switch path.Base(req.URL.Path) {
 	case "place.png":
 		sv.HandleGetImage(w, req)
