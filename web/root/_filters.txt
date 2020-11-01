@@ -1,4 +1,5 @@
-#serve 
-	ace desktop.html
-	home home.html
-	wsaddr wsaddr.txt
+#serve
+        ace desktop.html
+#place ws
+#place place.png
+#place stat
