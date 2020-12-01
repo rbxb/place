@@ -20,6 +20,7 @@ var port string
 var root string
 var loadPath string
 var savePath string
+var logPath string
 var width int
 var height int
 var count int
@@ -30,6 +31,7 @@ func init() {
 	flag.StringVar(&root, "root", "./root", "The directory serving files.")
 	flag.StringVar(&loadPath, "load", "", "The png to load as the canvas.")
 	flag.StringVar(&savePath, "save", "./place.png", "The path to save the canvas.")
+	flag.StringVar(&logPath, "log", "", "The log file to write to.")
 	flag.IntVar(&width, "width", 1024, "The width to create the canvas.")
 	flag.IntVar(&height, "height", 1024, "The height to create the canvas.")
 	flag.IntVar(&count, "count", 128, "The maximum number of connections.")
@@ -38,6 +40,14 @@ func init() {
 
 func main() {
 	flag.Parse()
+	if logPath != "" {
+		f, err := os.OpenFile("place.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		log.SetOutput(f)
+	}
 	var img draw.Image
 	if loadPath == "" {
 		nrgba := image.NewNRGBA(image.Rect(0, 0, width, height))
