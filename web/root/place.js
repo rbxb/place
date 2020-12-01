@@ -18,7 +18,7 @@ function Place(cvs, glWindow) {
 			loadingp.innerHTML = "";
 			setImage(new Uint8Array(buf));
 			for (var i = 0; i < queue.length; i++) {
-				const pixel = queue.unshift();
+				const pixel = queue[i];
 				glWindow.placePixel(pixel.x, pixel.y, pixel.color);
 				glWindow.draw();
 			}
