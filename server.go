@@ -132,12 +132,13 @@ func (sv *Server) readLoop(conn *websocket.Conn, ch chan []byte, i int) {
 			break
 		}
 	}
-	sv.clients[i] = nil
 	select {
 	case _, ok := <-ch:
 		if ok {
 			close(ch)
 		}
+	default:
+		close(ch)
 	}
 }
 
