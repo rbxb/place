@@ -31,16 +31,18 @@ var upgrader = websocket.Upgrader{
 
 type Server struct {
 	sync.RWMutex
-	clients []chan []byte
-	img     draw.Image
-	imgBuf  []byte
+	clients   []chan []byte
+	clientsOk []chan byte
+	img       draw.Image
+	imgBuf    []byte
 }
 
 func NewServer(img draw.Image, count int) *Server {
 	return &Server{
-		RWMutex: sync.RWMutex{},
-		clients: make([]chan []byte, count),
-		img:     img,
+		RWMutex:   sync.RWMutex{},
+		clients:   make([]chan []byte, count),
+		clientsOk: make([]chan byte, count),
+		img:       img,
 	}
 }
 
@@ -86,8 +88,10 @@ func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	ch := make(chan []byte, 8)
+	chok := make(chan byte, 1)
 	sv.clients[i] = ch
-	go sv.readLoop(conn, ch, i)
+	sv.clientsOk[i] = chok
+	go sv.readLoop(conn, chok)
 	go writeLoop(conn, ch)
 }
 
@@ -116,7 +120,7 @@ func rateLimiter() func() bool {
 	}
 }
 
-func (sv *Server) readLoop(conn *websocket.Conn, ch chan []byte, i int) {
+func (sv *Server) readLoop(conn *websocket.Conn, chok chan byte) {
 	limiter := rateLimiter()
 	for {
 		_, p, err := conn.ReadMessage()
@@ -132,14 +136,7 @@ func (sv *Server) readLoop(conn *websocket.Conn, ch chan []byte, i int) {
 			break
 		}
 	}
-	select {
-	case _, ok := <-ch:
-		if ok {
-			close(ch)
-		}
-	default:
-		close(ch)
-	}
+	close(chok)
 }
 
 func writeLoop(conn *websocket.Conn, ch chan []byte) {
@@ -162,12 +159,17 @@ func (sv *Server) handleMessage(p []byte) error {
 }
 
 func (sv *Server) broadcast(p []byte) {
-	for _, ch := range sv.clients {
+	for i, ch := range sv.clients {
+		chok := sv.clientsOk[i]
 		if ch != nil {
 			select {
+			case <-chok:
+				close(ch)
+				sv.clientsOk[i] = nil
 			case ch <- p:
 			default:
 				close(ch)
+				sv.clientsOk[i] = nil
 				log.Println("client kicked for being slow")
 			}
 		}
