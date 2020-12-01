@@ -133,7 +133,9 @@ func (sv *Server) readLoop(conn *websocket.Conn, ch chan []byte, i int) {
 		}
 	}
 	sv.clients[i] = nil
-	close(ch)
+	if _, ok := <-ch; ok {
+		close(ch)
+	}
 }
 
 func writeLoop(conn *websocket.Conn, ch chan []byte) {
@@ -161,7 +163,9 @@ func (sv *Server) broadcast(p []byte) {
 			select {
 			case ch <- p:
 			default:
-				close(ch)
+				if _, ok := <-ch; ok {
+					close(ch)
+				}
 				log.Println("client kicked for being slow")
 			}
 		}
