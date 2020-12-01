@@ -183,7 +183,7 @@ func (sv *Server) setPixel(x, y int, c color.Color) bool {
 	rect := sv.img.Bounds()
 	width := rect.Max.X - rect.Min.X
 	height := rect.Max.Y - rect.Min.Y
-	if 0 > x && x >= width && 0 > y && y >= height {
+	if 0 > x || x >= width || 0 > y || y >= height {
 		return false
 	}
 	sv.img.Set(x, y, c)
