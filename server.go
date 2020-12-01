@@ -31,19 +31,21 @@ var upgrader = websocket.Upgrader{
 
 type Server struct {
 	sync.RWMutex
-	clients   []chan []byte
-	clientsOk []chan byte
-	img       draw.Image
-	imgBuf    []byte
+	msgs    chan []byte
+	clients []chan []byte
+	img     draw.Image
+	imgBuf  []byte
 }
 
 func NewServer(img draw.Image, count int) *Server {
-	return &Server{
-		RWMutex:   sync.RWMutex{},
-		clients:   make([]chan []byte, count),
-		clientsOk: make([]chan byte, count),
-		img:       img,
+	sv := &Server{
+		RWMutex: sync.RWMutex{},
+		msgs:    make(chan []byte, 1),
+		clients: make([]chan []byte, count),
+		img:     img,
 	}
+	go sv.broadcastLoop()
+	return sv
 }
 
 func (sv *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -88,11 +90,10 @@ func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	ch := make(chan []byte, 8)
-	chok := make(chan byte, 1)
 	sv.clients[i] = ch
-	sv.clientsOk[i] = chok
-	go sv.readLoop(conn, chok)
-	go writeLoop(conn, ch)
+	readCloser := make(chan byte)
+	go sv.readLoop(conn, readCloser, i)
+	go writeLoop(conn, ch, readCloser)
 }
 
 func (sv *Server) getConnIndex() int {
@@ -120,7 +121,7 @@ func rateLimiter() func() bool {
 	}
 }
 
-func (sv *Server) readLoop(conn *websocket.Conn, chok chan byte) {
+func (sv *Server) readLoop(conn *websocket.Conn, readCloser chan byte, i int) {
 	limiter := rateLimiter()
 	for {
 		_, p, err := conn.ReadMessage()
@@ -136,41 +137,44 @@ func (sv *Server) readLoop(conn *websocket.Conn, chok chan byte) {
 			break
 		}
 	}
-	close(chok)
+	close(readCloser)
+	sv.clients[i] = nil
 }
 
-func writeLoop(conn *websocket.Conn, ch chan []byte) {
+func writeLoop(conn *websocket.Conn, ch chan []byte, readCloser chan byte) {
+	defer conn.Close()
 	for {
-		if p, ok := <-ch; ok {
+		select {
+		case p, ok := <-ch:
+			if !ok {
+				return
+			}
 			conn.WriteMessage(websocket.BinaryMessage, p)
-		} else {
-			break
+		case <-readCloser:
+			return
 		}
 	}
-	conn.Close()
 }
 
 func (sv *Server) handleMessage(p []byte) error {
 	if !sv.setPixel(parseEvent(p)) {
 		return errors.New("invalid placement")
 	}
-	sv.broadcast(p)
+	sv.msgs <- p
 	return nil
 }
 
-func (sv *Server) broadcast(p []byte) {
-	for i, ch := range sv.clients {
-		chok := sv.clientsOk[i]
-		if ch != nil {
-			select {
-			case <-chok:
-				close(ch)
-				sv.clientsOk[i] = nil
-			case ch <- p:
-			default:
-				close(ch)
-				sv.clientsOk[i] = nil
-				log.Println("client kicked for being slow")
+func (sv *Server) broadcastLoop() {
+	for {
+		p := <-sv.msgs
+		for i, ch := range sv.clients {
+			if ch != nil {
+				select {
+				case ch <- p:
+				default:
+					sv.clients[i] = nil
+					close(ch)
+				}
 			}
 		}
 	}
