@@ -16,13 +16,14 @@ function Place(cvs, glWindow) {
 		})
 		.then(buf => {
 			loadingp.innerHTML = "";
-			setImage(new Uint8Array(buf));
-			for (var i = 0; i < queue.length; i++) {
-				const pixel = queue[i];
-				glWindow.placePixel(pixel.x, pixel.y, pixel.color);
+			setImage(new Uint8Array(buf)).then(()=>{
+				for (var i = 0; i < queue.length; i++) {
+					const pixel = queue[i];
+					glWindow.placePixel(pixel.x, pixel.y, pixel.color);
+				}
 				glWindow.draw();
-			}
-			queue = null;
+				queue = null;
+			});
 		});
 	};
 	var connect = function(path) {
@@ -68,13 +69,17 @@ function Place(cvs, glWindow) {
 	};
 	var setImage = function(data) {
 		const img = new Image()
-		img.onload = function() {
-			glWindow.setTexture(img);
-			glWindow.draw();
-		};
 		const blob = new Blob([data], {type : "image/png"});
 		const blobUrl = URL.createObjectURL(blob);
 		img.src = blobUrl;
+		return new Promise((resolve, reject) => {
+			img.onload = ()=>{
+				glWindow.setTexture(img);
+				glWindow.draw();
+				resolve();
+			};
+			img.onerror = reject;
+		});
 	}
 	var putUint32 = function(b, offset, n) {
     	view = new DataView(b);
