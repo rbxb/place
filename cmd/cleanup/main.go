@@ -34,7 +34,7 @@ func main() {
 				count -= isWhite(x-1, y-1, width, height, img)
 				count -= isWhite(x+0, y-1, width, height, img)
 				count -= isWhite(x+1, y-1, width, height, img)
-				if count < 2 {
+				if count < 3 {
 					img.Set(x, y, color.NRGBA{255, 255, 255, 255})
 				}
 			}
