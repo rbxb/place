@@ -107,7 +107,7 @@ func (sv *Server) getConnIndex() int {
 }
 
 func rateLimiter() func() bool {
-	const rate = 8   //per second average
+	const rate = 4   //per second average
 	const min = 0.01 //kick threshold
 	last := time.Now().UnixNano()
 	var v float32 = 1.0
