@@ -161,6 +161,10 @@ func (sv *Server) handleMessage(p []byte) error {
 }
 
 func (sv *Server) broadcastLoop() {
+	defer func() {
+		x := recover()
+		log.Fatal(x)
+	}()
 	for {
 		select {
 		case i := <-sv.close:
