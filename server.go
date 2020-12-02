@@ -165,11 +165,14 @@ func (sv *Server) broadcastLoop() {
 		x := recover()
 		log.Fatal(x)
 	}()
+
 	for {
 		select {
 		case i := <-sv.close:
-			close(sv.clients[i])
-			sv.clients[i] = nil
+			if sv.clients[i] != nil {
+				close(sv.clients[i])
+				sv.clients[i] = nil
+			}
 		case p := <-sv.msgs:
 			for i, ch := range sv.clients {
 				if ch != nil {
