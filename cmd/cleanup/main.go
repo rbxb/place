@@ -11,9 +11,11 @@ import (
 )
 
 var loadPath string
+var tolerance int
 
 func init() {
 	flag.StringVar(&loadPath, "load", "./place.png", "The canvas to clean.")
+	flag.IntVar(&tolerance, "tolerance", 2, "Pixels with fewer neighbors will be cleared.")
 }
 
 func main() {
@@ -34,7 +36,7 @@ func main() {
 				count -= isWhite(x-1, y-1, width, height, img)
 				count -= isWhite(x+0, y-1, width, height, img)
 				count -= isWhite(x+1, y-1, width, height, img)
-				if count < 3 {
+				if count < tolerance {
 					img.Set(x, y, color.NRGBA{255, 255, 255, 255})
 				}
 			}
