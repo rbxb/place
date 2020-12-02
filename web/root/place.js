@@ -12,11 +12,11 @@ function Place(cvs, glWindow) {
 				console.error("Error downloading map.");
 				return;
 			}
-			return resp.arrayBuffer();
+			return downloadProgress(resp);
 		})
 		.then(buf => {
 			loadingp.innerHTML = "";
-			setImage(new Uint8Array(buf)).then(()=>{
+			setImage(buf).then(()=>{
 				for (var i = 0; i < queue.length; i++) {
 					const pixel = queue[i];
 					glWindow.placePixel(pixel.x, pixel.y, pixel.color);
@@ -26,6 +26,24 @@ function Place(cvs, glWindow) {
 			});
 		});
 	};
+	var downloadProgress = async function(resp) {
+		const len = resp.headers.get("Content-Length");
+		const a = new Uint8Array(len);
+		var pos = 0;
+		const reader = resp.body.getReader();
+		while(true) {
+			const {done, value} = await reader.read();
+			if (value) {
+				a.set(value, pos);
+				pos += value.length;
+				loadingp.innerHTML = "downloading map " + Math.round(pos/len*100) + "%";
+			}
+			if(done) {
+				break;
+			}
+		}
+		return a;
+	}
 	var connect = function(path) {
 		socket = new WebSocket(path);
 		socket.addEventListener("message", async function(event) {
