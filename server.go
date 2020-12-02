@@ -64,8 +64,10 @@ func (sv *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (sv *Server) HandleGetImage(w http.ResponseWriter, req *http.Request) {
+	b := sv.GetImageBytes() //not thread safe but it won't do anything bad
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Write(sv.GetImageBytes()) //not thread safe but it won't do anything bad
+	w.Header().Set("Content-Length", strconv.Itoa(len(b)))
+	w.Write(b)
 }
 
 func (sv *Server) HandleGetStat(w http.ResponseWriter, req *http.Request) {
