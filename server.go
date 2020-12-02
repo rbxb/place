@@ -32,6 +32,7 @@ var upgrader = websocket.Upgrader{
 type Server struct {
 	sync.RWMutex
 	msgs    chan []byte
+	close   chan int
 	clients []chan []byte
 	img     draw.Image
 	imgBuf  []byte
@@ -40,7 +41,8 @@ type Server struct {
 func NewServer(img draw.Image, count int) *Server {
 	sv := &Server{
 		RWMutex: sync.RWMutex{},
-		msgs:    make(chan []byte, 1),
+		msgs:    make(chan []byte),
+		close:   make(chan int),
 		clients: make([]chan []byte, count),
 		img:     img,
 	}
@@ -91,9 +93,8 @@ func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
 	}
 	ch := make(chan []byte, 8)
 	sv.clients[i] = ch
-	readCloser := make(chan byte)
-	go sv.readLoop(conn, readCloser, i)
-	go writeLoop(conn, ch, readCloser)
+	go sv.readLoop(conn, i)
+	go writeLoop(conn, ch)
 }
 
 func (sv *Server) getConnIndex() int {
@@ -121,7 +122,7 @@ func rateLimiter() func() bool {
 	}
 }
 
-func (sv *Server) readLoop(conn *websocket.Conn, readCloser chan byte, i int) {
+func (sv *Server) readLoop(conn *websocket.Conn, i int) {
 	limiter := rateLimiter()
 	for {
 		_, p, err := conn.ReadMessage()
@@ -137,23 +138,18 @@ func (sv *Server) readLoop(conn *websocket.Conn, readCloser chan byte, i int) {
 			break
 		}
 	}
-	close(readCloser)
-	sv.clients[i] = nil
+	sv.close <- i
 }
 
-func writeLoop(conn *websocket.Conn, ch chan []byte, readCloser chan byte) {
-	defer conn.Close()
+func writeLoop(conn *websocket.Conn, ch chan []byte) {
 	for {
-		select {
-		case p, ok := <-ch:
-			if !ok {
-				return
-			}
+		if p, ok := <-ch; ok {
 			conn.WriteMessage(websocket.BinaryMessage, p)
-		case <-readCloser:
-			return
+		} else {
+			break
 		}
 	}
+	conn.Close()
 }
 
 func (sv *Server) handleMessage(p []byte) error {
@@ -166,14 +162,19 @@ func (sv *Server) handleMessage(p []byte) error {
 
 func (sv *Server) broadcastLoop() {
 	for {
-		p := <-sv.msgs
-		for i, ch := range sv.clients {
-			if ch != nil {
-				select {
-				case ch <- p:
-				default:
-					sv.clients[i] = nil
-					close(ch)
+		select {
+		case i := <-sv.close:
+			close(sv.clients[i])
+			sv.clients[i] = nil
+		case p := <-sv.msgs:
+			for i, ch := range sv.clients {
+				if ch == nil {
+					select {
+					case ch <- p:
+					default:
+						close(ch)
+						sv.clients[i] = nil
+					}
 				}
 			}
 		}
