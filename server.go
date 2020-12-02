@@ -168,7 +168,7 @@ func (sv *Server) broadcastLoop() {
 			sv.clients[i] = nil
 		case p := <-sv.msgs:
 			for i, ch := range sv.clients {
-				if ch == nil {
+				if ch != nil {
 					select {
 					case ch <- p:
 					default:
