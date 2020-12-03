@@ -98,11 +98,8 @@ func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
 	}
 	ch := make(chan []byte, 8)
 	sv.clients[i] = ch
-	sv.readLoops++
-	sv.writeLoops++
 	go sv.readLoop(conn, i)
 	writeLoop(conn, ch)
-	sv.writeLoops--
 }
 
 func (sv *Server) getConnIndex() int {
@@ -147,7 +144,6 @@ func (sv *Server) readLoop(conn *websocket.Conn, i int) {
 		}
 	}
 	sv.close <- i
-	sv.readLoops--
 }
 
 func writeLoop(conn *websocket.Conn, ch chan []byte) {
