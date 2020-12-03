@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"image"
 	"image/color"
 	"image/draw"
 	"image/png"
 	"log"
+	"math"
 	"os"
 )
 
@@ -18,6 +18,9 @@ func init() {
 	flag.IntVar(&tolerance, "tolerance", 2, "Pixels with fewer neighbors will be cleared.")
 }
 
+var searchX = []int{1, 1, 0, -1, -1, -1, 0, 1}
+var searchY = []int{0, 1, 1, 1, 0, -1, -1, -1}
+
 func main() {
 	flag.Parse()
 	img := loadImage(loadPath)
@@ -26,18 +29,41 @@ func main() {
 	height := rect.Max.Y - rect.Min.Y
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
-			if isWhite(x, y, width, height, img) == 0 {
-				count := 8
-				count -= isWhite(x+1, y+0, width, height, img)
-				count -= isWhite(x+1, y+1, width, height, img)
-				count -= isWhite(x+0, y+1, width, height, img)
-				count -= isWhite(x-1, y+1, width, height, img)
-				count -= isWhite(x-1, y+0, width, height, img)
-				count -= isWhite(x-1, y-1, width, height, img)
-				count -= isWhite(x+0, y-1, width, height, img)
-				count -= isWhite(x+1, y-1, width, height, img)
-				if count < tolerance {
+			c := img.At(x, y)
+			if isWhite(c) == 0 {
+				ok := false
+				for i := range searchX {
+					if posOk(x+searchX[i], y+searchY[i], width, height) {
+						c2 := img.At(x+searchX[i], y+searchY[i])
+						if difference(c, c2) < 30000 {
+							ok = true
+							break
+						}
+					}
+				}
+				if !ok {
 					img.Set(x, y, color.NRGBA{255, 255, 255, 255})
+				}
+			}
+		}
+	}
+	for i := 0; i < 2; i++ {
+		for x := 0; x < width; x++ {
+			for y := 0; y < height; y++ {
+				c := img.At(x, y)
+				if isWhite(c) == 0 {
+					white := 0
+					for i := range searchX {
+						if posOk(x+searchX[i], y+searchY[i], width, height) {
+							c2 := img.At(x+searchX[i], y+searchY[i])
+							white += isWhite(c2)
+						} else {
+							white++
+						}
+					}
+					if white > 6 {
+						img.Set(x, y, color.NRGBA{255, 255, 255, 255})
+					}
 				}
 			}
 		}
@@ -50,12 +76,23 @@ func main() {
 	f.Close()
 }
 
-func isWhite(x, y, width, height int, img image.Image) int {
-	if 0 <= x && x < width && 0 <= y && y < height {
-		r, g, b, _ := img.At(x, y).RGBA()
-		if r == 0xffff && g == 0xffff && b == 0xffff {
-			return 1
-		}
+func difference(c, c2 color.Color) float64 {
+	r, g, b, _ := c.RGBA()
+	r2, g2, b2, _ := c2.RGBA()
+	dr := math.Abs(float64(r - r2))
+	dg := math.Abs(float64(g - g2))
+	db := math.Abs(float64(b - b2))
+	return math.Max(math.Max(dr, dg), db)
+}
+
+func posOk(x, y, width, height int) bool {
+	return 0 <= x && x < width && 0 <= y && y < height
+}
+
+func isWhite(c color.Color) int {
+	r, g, b, _ := c.RGBA()
+	if r == 0xffff && g == 0xffff && b == 0xffff {
+		return 1
 	}
 	return 0
 }
