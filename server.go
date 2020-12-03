@@ -32,13 +32,11 @@ var upgrader = websocket.Upgrader{
 
 type Server struct {
 	sync.RWMutex
-	msgs       chan []byte
-	close      chan int
-	clients    []chan []byte
-	img        draw.Image
-	imgBuf     []byte
-	readLoops  int
-	writeLoops int
+	msgs    chan []byte
+	close   chan int
+	clients []chan []byte
+	img     draw.Image
+	imgBuf  []byte
 }
 
 func NewServer(img draw.Image, count int) *Server {
@@ -80,7 +78,7 @@ func (sv *Server) HandleGetStat(w http.ResponseWriter, req *http.Request) {
 			count++
 		}
 	}
-	fmt.Fprint(w, count, sv.readLoops, sv.writeLoops)
+	fmt.Fprint(w, count)
 }
 
 func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
@@ -128,7 +126,6 @@ func rateLimiter() func() bool {
 }
 
 func (sv *Server) readLoop(conn *websocket.Conn, i int) {
-	sv.readLoops++
 	limiter := rateLimiter()
 	for {
 		_, p, err := conn.ReadMessage()
@@ -145,11 +142,9 @@ func (sv *Server) readLoop(conn *websocket.Conn, i int) {
 		}
 	}
 	sv.close <- i
-	sv.readLoops--
 }
 
 func (sv *Server) writeLoop(conn *websocket.Conn, ch chan []byte) {
-	sv.writeLoops++
 	for {
 		if p, ok := <-ch; ok {
 			conn.WriteMessage(websocket.BinaryMessage, p)
@@ -158,7 +153,6 @@ func (sv *Server) writeLoop(conn *websocket.Conn, ch chan []byte) {
 		}
 	}
 	conn.Close()
-	sv.writeLoops--
 }
 
 func (sv *Server) handleMessage(p []byte) error {
