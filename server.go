@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"image/color"
 	"image/draw"
 	"image/png"
@@ -80,7 +79,7 @@ func (sv *Server) HandleGetStat(w http.ResponseWriter, req *http.Request) {
 			count++
 		}
 	}
-	fmt.Fprintln(w, count, sv.readLoops, sv.writeLoops)
+	w.Write([]byte(strconv.Itoa(count)))
 }
 
 func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
