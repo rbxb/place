@@ -34,7 +34,7 @@ func init() {
 	flag.StringVar(&logPath, "log", "", "The log file to write to.")
 	flag.IntVar(&width, "width", 1024, "The width to create the canvas.")
 	flag.IntVar(&height, "height", 1024, "The height to create the canvas.")
-	flag.IntVar(&count, "count", 128, "The maximum number of connections.")
+	flag.IntVar(&count, "count", 64, "The maximum number of connections.")
 	flag.IntVar(&saveInterval, "sinterval", 180, "Save interval in seconds.")
 }
 
