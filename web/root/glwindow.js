@@ -55,7 +55,11 @@ function GLWindow(cvs) {
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
 		tex_scale = {x:img.width, y:img.height};
 		gl.uniform2f(u_tex_scale, tex_scale.x, tex_scale.y);
-		zoom = cvs.width / tex_scale.x;
+		if (cvs.width > cvs.height) {
+			zoom = cvs.width / tex_scale.x;
+		} else {
+			zoom = cvs.height / tex_scale.y;
+		}
 		this.setZoom(zoom);
 	};
 	this.placePixel = function(x, y, color) {
