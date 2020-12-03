@@ -98,7 +98,7 @@ func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
 	ch := make(chan []byte, 8)
 	sv.clients[i] = ch
 	go sv.readLoop(conn, i)
-	writeLoop(conn, ch)
+	go writeLoop(conn, ch)
 }
 
 func (sv *Server) getConnIndex() int {
