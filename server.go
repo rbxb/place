@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"image/color"
 	"image/draw"
 	"image/png"
@@ -32,13 +31,11 @@ var upgrader = websocket.Upgrader{
 
 type Server struct {
 	sync.RWMutex
-	msgs       chan []byte
-	close      chan int
-	clients    []chan []byte
-	img        draw.Image
-	imgBuf     []byte
-	readLoops  int
-	writeLoops int
+	msgs    chan []byte
+	close   chan int
+	clients []chan []byte
+	img     draw.Image
+	imgBuf  []byte
 }
 
 func NewServer(img draw.Image, count int) *Server {
@@ -80,7 +77,7 @@ func (sv *Server) HandleGetStat(w http.ResponseWriter, req *http.Request) {
 			count++
 		}
 	}
-	fmt.Fprintln(w, count, sv.readLoops, sv.writeLoops)
+	w.Write([]byte(strconv.Itoa(count)))
 }
 
 func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
@@ -98,11 +95,8 @@ func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
 	}
 	ch := make(chan []byte, 8)
 	sv.clients[i] = ch
-	sv.readLoops++
-	sv.writeLoops++
 	go sv.readLoop(conn, i)
-	writeLoop(conn, ch)
-	sv.writeLoops--
+	go writeLoop(conn, ch)
 }
 
 func (sv *Server) getConnIndex() int {
@@ -147,7 +141,6 @@ func (sv *Server) readLoop(conn *websocket.Conn, i int) {
 		}
 	}
 	sv.close <- i
-	sv.readLoops--
 }
 
 func writeLoop(conn *websocket.Conn, ch chan []byte) {
@@ -170,6 +163,11 @@ func (sv *Server) handleMessage(p []byte) error {
 }
 
 func (sv *Server) broadcastLoop() {
+	defer func() {
+		x := recover()
+		log.Fatal(x)
+	}()
+
 	for {
 		select {
 		case i := <-sv.close:
