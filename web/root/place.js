@@ -2,6 +2,7 @@ function Place(cvs, glWindow) {
 	var queue = [];
 	var socket = null;
 	var loadingp = document.querySelector("#loading-p");
+	var uiwrapper = document.querySelector("#ui-wrapper");
 	this.init = function() {
 		loadingp.innerHTML = "connecting";
 		connect("wss://" + window.location.hostname + "/ws");
@@ -23,6 +24,7 @@ function Place(cvs, glWindow) {
 				}
 				glWindow.draw();
 				queue = null;
+				uiwrapper.setAttribute("hide", true);
 			});
 		});
 	};
@@ -55,6 +57,7 @@ function Place(cvs, glWindow) {
 		});
 		socket.addEventListener("error", function(event) {
 			console.error("Error making WebSocket connection.");
+			alert("Failed to connect.");
 			socket.close();
 		});
 	};

@@ -26,7 +26,22 @@ body {
 	left: 0;
 	width: 100%;
 	height: 100%;
+	background-color: #ffffff;
+	transition: background 1s;
+}
+
+#ui-wrapper > #color-wrapper, #zoom-wrapper {
+	visibility: hidden;
+}
+
+
+#ui-wrapper[hide=true] {
 	pointer-events: none;
+	background: none;
+}
+
+#ui-wrapper[hide=true] > #color-wrapper, #zoom-wrapper {
+	visibility: visible;
 }
 
 #color-wrapper {
@@ -77,4 +92,5 @@ body {
 	border: 1px solid black;
 	cursor: pointer;
 	pointer-events: all;
+	user-select: none;
 }
