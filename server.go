@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"image/color"
 	"image/draw"
 	"image/png"
@@ -79,7 +80,7 @@ func (sv *Server) HandleGetStat(w http.ResponseWriter, req *http.Request) {
 			count++
 		}
 	}
-	w.Write([]byte(strconv.Itoa(count)))
+	fmt.Fprint(w, count, sv.readLoops, sv.writeLoops)
 }
 
 func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
@@ -98,7 +99,7 @@ func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
 	ch := make(chan []byte, 8)
 	sv.clients[i] = ch
 	go sv.readLoop(conn, i)
-	go writeLoop(conn, ch)
+	go sv.writeLoop(conn, ch)
 }
 
 func (sv *Server) getConnIndex() int {
@@ -127,6 +128,7 @@ func rateLimiter() func() bool {
 }
 
 func (sv *Server) readLoop(conn *websocket.Conn, i int) {
+	sv.readLoops++
 	limiter := rateLimiter()
 	for {
 		_, p, err := conn.ReadMessage()
@@ -143,9 +145,11 @@ func (sv *Server) readLoop(conn *websocket.Conn, i int) {
 		}
 	}
 	sv.close <- i
+	sv.readLoops--
 }
 
-func writeLoop(conn *websocket.Conn, ch chan []byte) {
+func (sv *Server) writeLoop(conn *websocket.Conn, ch chan []byte) {
+	sv.writeLoops++
 	for {
 		if p, ok := <-ch; ok {
 			conn.WriteMessage(websocket.BinaryMessage, p)
@@ -154,6 +158,7 @@ func writeLoop(conn *websocket.Conn, ch chan []byte) {
 		}
 	}
 	conn.Close()
+	sv.writeLoops--
 }
 
 func (sv *Server) handleMessage(p []byte) error {
