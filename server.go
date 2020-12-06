@@ -68,6 +68,7 @@ func (sv *Server) HandleGetImage(w http.ResponseWriter, req *http.Request) {
 	b := sv.GetImageBytes() //not thread safe but it won't do anything bad
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Length", strconv.Itoa(len(b)))
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Write(b)
 }
 
