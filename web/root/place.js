@@ -1,5 +1,5 @@
 function Place(cvs, glWindow) {
-	var queue = [];
+	var loaded = false;
 	var socket = null;
 	var loadingp = document.querySelector("#loading-p");
 	var uiwrapper = document.querySelector("#ui-wrapper");
@@ -18,12 +18,7 @@ function Place(cvs, glWindow) {
 		.then(buf => {
 			loadingp.innerHTML = "";
 			setImage(buf).then(()=>{
-				for (var i = 0; i < queue.length; i++) {
-					const pixel = queue[i];
-					glWindow.placePixel(pixel.x, pixel.y, pixel.color);
-				}
-				glWindow.draw();
-				queue = null;
+				loaded = true;
 				uiwrapper.setAttribute("hide", true);
 			});
 		});
@@ -50,7 +45,7 @@ function Place(cvs, glWindow) {
 		socket = new WebSocket(path);
 		socket.addEventListener("message", async function(event) {
 			const b = await event.data.arrayBuffer();
-    		handleResponse(b);
+    		handleSetPixel(b);
 		});
 		socket.addEventListener("close", function(event) {
 			socket = null;
@@ -77,13 +72,11 @@ function Place(cvs, glWindow) {
 			console.error("Disconnected.");
 		}
 	};
-	var handleResponse = function(b) {
-		const x = getUint32(b, 0);
-		const y = getUint32(b, 4);
-		const color = new Uint8Array(b.slice(8));
-		if (queue != null) {
-			queue.push({x:x,y:y,color:color});
-		} else {
+	var handleSetPixel = function(b) {
+		if (loaded) {
+			const x = getUint32(b, 0);
+			const y = getUint32(b, 4);
+			const color = new Uint8Array(b.slice(8));
 			glWindow.placePixel(x, y, color);
 			glWindow.draw();
 		}
