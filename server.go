@@ -131,7 +131,6 @@ func rateLimiter() func() bool {
 			v = 1.0
 		}
 		last = now
-		fmt.Println(v)
 		return v > min
 	}
 }
