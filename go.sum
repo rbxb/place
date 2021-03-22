@@ -1,0 +1,4 @@
+github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
+github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
+github.com/rbxb/httpfilter v0.0.0-20201201140554-d0702af823a9 h1:70ePV2lOxDLwzjbdXHFqpHxa48kQxGJAXiZ6ntjLxiY=
+github.com/rbxb/httpfilter v0.0.0-20201201140554-d0702af823a9/go.mod h1:a5g1a+FRZnQ4MM49Cl0A8ripRqXbvh6iuOOcNXLXsIg=
