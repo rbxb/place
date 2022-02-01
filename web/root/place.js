@@ -98,7 +98,7 @@ class Place {
 				b[8+i] = color[i];
 			}
 			this.#socket.send(b);
-			this.#glWindow.placePixel(x, y, color);
+			this.#glWindow.setPixelColor(x, y, color);
 			this.#glWindow.draw();
 		} else {
 			alert("Disconnected.");
