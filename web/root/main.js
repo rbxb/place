@@ -1,11 +1,11 @@
 function main() {
 	let cvs = document.querySelector("#viewport-canvas");
-	let glWindow = GLWindow(cvs);
+	let glWindow = new GLWindow(cvs);
 
-	if (!glWindow) return;
+	if (!glWindow.ok()) return;
 
-	let place = Place(cvs, glWindow);
-	place.init();
+	let place = new Place(glWindow);
+	place.initConnection();
 
 	let gui = GUI(cvs, glWindow, place);
 }
@@ -152,7 +152,7 @@ const GUI = (cvs, glWindow, place) => {
 			const oldColor = glWindow.getColor(pos);
 			for (let i = 0; i < oldColor.length; i++) {
 				if (oldColor[i] != color[i]) {
-					place.put(pos.x, pos.y, color);
+					place.setPixel(pos.x, pos.y, color);
 					break;
 				}
 			}
