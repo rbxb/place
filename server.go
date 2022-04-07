@@ -25,8 +25,8 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 	Error: func(w http.ResponseWriter, req *http.Request, status int, err error) {
-		log.Fatal(err)
-		http.Error(w, err.Error(), status)
+		log.Println(err)
+		http.Error(w, "Error while trying to make websocket connection.", status)
 	},
 }
 
@@ -87,6 +87,7 @@ func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
 	defer sv.Unlock()
 	i := sv.getConnIndex()
 	if i == -1 {
+		log.Println("Server full.")
 		http.Error(w, "Server full.", 503)
 		return
 	}
@@ -143,11 +144,11 @@ func (sv *Server) readLoop(conn *websocket.Conn, i int) {
 			break
 		}
 		if !limiter() {
-			log.Println("client kicked for high rate")
+			log.Println("Client kicked for high rate.")
 			break
 		}
 		if sv.handleMessage(p) != nil {
-			log.Println("client kicked for bad message")
+			log.Println("Client kicked for bad message.")
 			break
 		}
 	}
