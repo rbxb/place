@@ -33,6 +33,11 @@ class Place {
 			wsProt = "ws:";
 		}
 
+		let port = window.location.port;
+		if (port != "") {
+			host += ":" + port;
+		}
+
 		this.#connect(wsProt + "//" + host + "/ws");
 		this.#loadingp.innerHTML = "downloading map";
 
