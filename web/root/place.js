@@ -19,34 +19,37 @@ class Place {
 	initConnection() {
 		this.#loadingp.innerHTML = "connecting";
 
-		let host, wsProt, httpProt;
+		let host;
 		if (LOCAL_MODE) {
 			host = LOCAL_IP_ADDRESS;
-			wsProt = "ws://";
-			httpProt = "http://";
 		} else {
 			host = window.location.hostname;
-			wsProt = "wss://";
-			httpProt = "https://";
 		}
 
-		this.#connect(wsProt + host + "/ws");
+		let wsProt;
+		if (window.location.protocol == "https:") {
+			wsProt = "wss:";
+		} else {
+			wsProt = "ws:";
+		}
+
+		this.#connect(wsProt + "//" + host + "/ws");
 		this.#loadingp.innerHTML = "downloading map";
 
-		fetch(httpProt + host + "/place.png")
-		.then(async resp => {
-			if (!resp.ok) {
-				console.error("Error downloading map.");
-				return null;
-			}
+		fetch(window.location.protocol + "//" + host + "/place.png")
+			.then(async resp => {
+				if (!resp.ok) {
+					console.error("Error downloading map.");
+					return null;
+				}
 
-			let buf = await this.#downloadProgress(resp);
-			await this.#setImage(buf);
+				let buf = await this.#downloadProgress(resp);
+				await this.#setImage(buf);
 
-			this.#loaded = true;
-			this.#loadingp.innerHTML = "";
-			this.#uiwrapper.setAttribute("hide", true);
-		});
+				this.#loaded = true;
+				this.#loadingp.innerHTML = "";
+				this.#uiwrapper.setAttribute("hide", true);
+			});
 	}
 
 	async #downloadProgress(resp) {
@@ -54,14 +57,14 @@ class Place {
 		let a = new Uint8Array(len);
 		let pos = 0;
 		let reader = resp.body.getReader();
-		while(true) {
-			let {done, value} = await reader.read();
+		while (true) {
+			let { done, value } = await reader.read();
 			if (value) {
 				a.set(value, pos);
 				pos += value.length;
-				this.#loadingp.innerHTML = "downloading map " + Math.round(pos/len*100) + "%";
+				this.#loadingp.innerHTML = "downloading map " + Math.round(pos / len * 100) + "%";
 			}
-			if(done) break;
+			if (done) break;
 		}
 		return a;
 	}
@@ -71,7 +74,7 @@ class Place {
 
 		const socketMessage = async (event) => {
 			let b = await event.data.arrayBuffer();
-    		this.#handleSocketSetPixel(b);
+			this.#handleSocketSetPixel(b);
 		};
 
 		const socketClose = (event) => {
@@ -95,7 +98,7 @@ class Place {
 			this.#putUint32(b.buffer, 0, x);
 			this.#putUint32(b.buffer, 4, y);
 			for (let i = 0; i < 3; i++) {
-				b[8+i] = color[i];
+				b[8 + i] = color[i];
 			}
 			this.#socket.send(b);
 			this.#glWindow.setPixelColor(x, y, color);
@@ -118,7 +121,7 @@ class Place {
 
 	async #setImage(data) {
 		let img = new Image()
-		let blob = new Blob([data], {type : "image/png"});
+		let blob = new Blob([data], { type: "image/png" });
 		let blobUrl = URL.createObjectURL(blob);
 		img.src = blobUrl;
 		let promise = new Promise((resolve, reject) => {
@@ -133,8 +136,8 @@ class Place {
 	}
 
 	#putUint32(b, offset, n) {
-    	let view = new DataView(b);
-    	view.setUint32(offset, n, false);
+		let view = new DataView(b);
+		view.setUint32(offset, n, false);
 	}
 
 	#getUint32(b, offset) {
