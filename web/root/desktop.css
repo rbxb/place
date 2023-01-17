@@ -30,7 +30,8 @@ body {
 	transition: background 1s;
 }
 
-#ui-wrapper > #color-wrapper, #zoom-wrapper {
+#ui-wrapper>#color-wrapper,
+#zoom-wrapper {
 	visibility: hidden;
 }
 
@@ -40,7 +41,8 @@ body {
 	background: none;
 }
 
-#ui-wrapper[hide=true] > #color-wrapper, #zoom-wrapper {
+#ui-wrapper[hide=true]>#color-wrapper,
+#zoom-wrapper {
 	visibility: visible;
 }
 
@@ -71,7 +73,7 @@ body {
 	top: 50%;
 	left: 50%;
 	font-size: 1.4em;
-	transform: translate(-50%,-50%);
+	transform: translate(-50%, -50%);
 }
 
 #zoom-wrapper {
@@ -93,4 +95,52 @@ body {
 	cursor: pointer;
 	pointer-events: all;
 	user-select: none;
+}
+
+#help-button {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	z-index: 900;
+	width: 60px;
+	padding: 8px;
+	background-color: #ffffff;
+	border: 1px solid #000;
+	cursor: pointer;
+}
+
+#help-popup {
+	font-size: 16px;
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	z-index: 1000;
+	width: 800px;
+	max-width: calc(100vw - 60px);
+	padding: 20px;
+	background-color: #ffffff;
+	border: 1px solid #000;
+}
+
+#close-help-popup {
+	font-size: inherit;
+	margin-top: 20px;
+	text-decoration: underline;
+	cursor: pointer;
+	background: none;
+	border: none;
+}
+
+#help-text-mobile {
+	display: none;
+}
+
+@media (hover: none) {
+	#help-text-desktop {
+		display: none;
+	}
+
+	#help-text-mobile {
+		display: inline;
+	}
 }

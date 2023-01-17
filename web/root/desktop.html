@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 	<title>Place</title>
 	<link rel="stylesheet" href="desktop.css" />
@@ -8,6 +9,7 @@
 	<meta name="keywords" content="r/place, place, game, golang, canvas">
 	<link rel="preload" href="/place.png" as="fetch" crossorigin>
 </head>
+
 <body>
 	<canvas id="viewport-canvas" oncontextmenu="return false;"></canvas>
 	<div id="ui-wrapper">
@@ -25,6 +27,24 @@
 			</button>
 		</div>
 	</div>
+	<button id="help-button" onclick="document.querySelector('#help-popup').style.visibility = 'visible';">
+		<p><strong>Help</strong></p>
+	</button>
+	<div id="help-popup">
+		<div id="help-text-desktop">
+			<p><strong>Right Click</strong> to place a pixel.</p><br>
+			<p>Use the mouse wheel or <strong>+</strong> and <strong>-</strong> buttons to zoom in.</p><br>
+			<p><strong>Ctrl + Right Click</strong> to select a color from the canvas.</p><br>
+		</div>
+		<div id="help-text-mobile">
+			<p><strong>Tap</strong> to place a pixel.</p><br>
+			<p>Use the <strong>+</strong> and <strong>-</strong> buttons to zoom in.</p><br>
+		</div>
+		<p>Set a hexadecimal color value in the lower left corner.</p><br>
+		<button id="close-help-popup"
+			onclick="document.querySelector('#help-popup').style.visibility = 'hidden';"><strong>Close
+				me.</strong></button>
+	</div>
 	<script src="main.js"></script>
 	<script src="place.js"></script>
 	<script src="glwindow.js"></script>
@@ -32,4 +52,5 @@
 		main();
 	</script>
 </body>
+
 </html>
