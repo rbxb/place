@@ -58,8 +58,8 @@ class GLWindow {
 			return;
 		}
 
-		this.#texScale = {x: 0, y: 0};
-		this.#camPos = {x: 0, y: 0};
+		this.#texScale = { x: 0, y: 0 };
+		this.#camPos = { x: 0, y: 0 };
 		this.#zoom = 1;
 
 		const vertexShader = this.#compileShader(this.#gl.VERTEX_SHADER, viewportVertexShaderSource);
@@ -69,7 +69,7 @@ class GLWindow {
 		this.#createPosAttribute();
 		this.#createUniforms();
 		this.updateViewScale();
-		this.#gl.clearColor(0.0,0.0,0.0,0.0);
+		this.#gl.clearColor(0.0, 0.0, 0.0, 0.0);
 	}
 
 	ok() {
@@ -93,7 +93,7 @@ class GLWindow {
 		this.#texFramebuffer = this.#gl.createFramebuffer();
 		this.#gl.bindFramebuffer(this.#gl.FRAMEBUFFER, this.#texFramebuffer);
 		this.#gl.framebufferTexture2D(this.#gl.FRAMEBUFFER, this.#gl.COLOR_ATTACHMENT0, this.#gl.TEXTURE_2D, this.#tex, 0);
-		this.#texScale = {x: img.width, y: img.height};
+		this.#texScale = { x: img.width, y: img.height };
 		this.#gl.uniform2f(this.#u_tex, this.#texScale.x, this.#texScale.y);
 		if (this.#cvs.width > this.#cvs.height) {
 			this.#zoom = this.#cvs.width / this.#texScale.x;
@@ -116,11 +116,11 @@ class GLWindow {
 		let rgba = new Uint8Array(4);
 		this.#gl.bindFramebuffer(this.#gl.FRAMEBUFFER, this.#texFramebuffer);
 		this.#gl.readPixels(pos.x, pos.y, 1, 1, this.#gl.RGBA, this.#gl.UNSIGNED_BYTE, rgba);
-		return rgba.slice(0,3);
+		return rgba.slice(0, 3);
 	}
 
 	scroll(ev) {
-		this.#camPos = {x: ev.target.scrollLeft, y: ev.target.scrollTop};
+		this.#camPos = { x: ev.target.scrollLeft, y: ev.target.scrollTop };
 		this.#gl.uniform2f(this.#u_cam, this.#camPos.x, this.#camPos.y);
 	}
 
@@ -132,7 +132,7 @@ class GLWindow {
 
 	setZoom(z) {
 		if (z < 0.01) z = 0.01;
-		if (z > 20) z = 20;
+		if (z > 40) z = 40;
 		this.#zoom = z;
 		this.#gl.uniform1f(this.#u_zoom, z);
 	}
@@ -210,11 +210,11 @@ class GLWindow {
 		let buffer = this.#gl.createBuffer();
 		this.#gl.bindBuffer(this.#gl.ARRAY_BUFFER, buffer);
 		let positions = [
-			-0.5,-0.5,
-			 0.5,-0.5,
-			 0.5, 0.5,
-			-0.5,-0.5,
-			 0.5, 0.5,
+			-0.5, -0.5,
+			0.5, -0.5,
+			0.5, 0.5,
+			-0.5, -0.5,
+			0.5, 0.5,
 			-0.5, 0.5,
 		];
 		this.#gl.bufferData(this.#gl.ARRAY_BUFFER, new Float32Array(positions), this.#gl.STATIC_DRAW);

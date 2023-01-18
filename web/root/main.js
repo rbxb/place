@@ -11,9 +11,11 @@ function main() {
 }
 
 const GUI = (cvs, glWindow, place) => {
-	let color = new Uint8Array([0,0,0]);
+	let color = new Uint8Array([0, 0, 0]);
 	let dragdown = false;
-	let lastMovePos = {x:0,y:0};
+	let touchScaling = false;
+	let lastMovePos = { x: 0, y: 0 };
+	let lastScalingDist = 0;
 	let touchstartTime;
 
 	const colorField = document.querySelector("#color-field");
@@ -25,36 +27,36 @@ const GUI = (cvs, glWindow, place) => {
 	//
 	document.addEventListener("keydown", ev => {
 		switch (ev.keyCode) {
-		case 189:
-		case 173:
-			ev.preventDefault();
-			zoomOut();
-			break;
-		case 187:
-		case 61:
-			ev.preventDefault();
-			zoomIn();
-			break;
+			case 189:
+			case 173:
+				ev.preventDefault();
+				zoomOut(1.2);
+				break;
+			case 187:
+			case 61:
+				ev.preventDefault();
+				zoomIn(1.2);
+				break;
 		}
 	});
 
 	window.addEventListener("wheel", ev => {
 		let zoom = glWindow.getZoom();
 		if (ev.deltaY > 0) {
-				zoom /= 1.05;
-			} else {
-				zoom *= 1.05;
-			}
+			zoom /= 1.05;
+		} else {
+			zoom *= 1.05;
+		}
 		glWindow.setZoom(zoom);
 		glWindow.draw();
 	});
 
 	document.querySelector("#zoom-in").addEventListener("click", () => {
-		zoomIn();
+		zoomIn(1.2);
 	});
 
 	document.querySelector("#zoom-out").addEventListener("click", () => {
-		zoomOut();
+		zoomOut(1.2);
 	});
 
 	window.addEventListener("resize", ev => {
@@ -64,19 +66,19 @@ const GUI = (cvs, glWindow, place) => {
 
 	cvs.addEventListener("mousedown", (ev) => {
 		switch (ev.button) {
-		case 0:
-			dragdown = true;
-			lastMovePos = {x:ev.clientX, y:ev.clientY};
-			break;
-		case 1:
-			pickColor({x:ev.clientX,y:ev.clientY});
-			break;
-		case 2:
-			if (ev.ctrlKey) {
-				pickColor({x:ev.clientX,y:ev.clientY});
-			} else {
-				drawPixel({x:ev.clientX,y:ev.clientY}, color);
-			}
+			case 0:
+				dragdown = true;
+				lastMovePos = { x: ev.clientX, y: ev.clientY };
+				break;
+			case 1:
+				pickColor({ x: ev.clientX, y: ev.clientY });
+				break;
+			case 2:
+				if (ev.ctrlKey) {
+					pickColor({ x: ev.clientX, y: ev.clientY });
+				} else {
+					drawPixel({ x: ev.clientX, y: ev.clientY }, color);
+				}
 		}
 	});
 
@@ -86,7 +88,7 @@ const GUI = (cvs, glWindow, place) => {
 	});
 
 	document.addEventListener("mousemove", (ev) => {
-		const movePos = {x:ev.clientX, y:ev.clientY};
+		const movePos = { x: ev.clientX, y: ev.clientY };
 		if (dragdown) {
 			glWindow.move(movePos.x - lastMovePos.x, movePos.y - lastMovePos.y);
 			glWindow.draw();
@@ -97,34 +99,58 @@ const GUI = (cvs, glWindow, place) => {
 
 	cvs.addEventListener("touchstart", (ev) => {
 		touchstartTime = (new Date()).getTime();
-		lastMovePos = {x:ev.touches[0].clientX, y:ev.touches[0].clientY};
+		lastMovePos = { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
+		if (ev.touches.length === 2) {
+			touchScaling = true;
+			lastScalingDist = null;
+		}
 	});
 
 	document.addEventListener("touchend", (ev) => {
 		let elapsed = (new Date()).getTime() - touchstartTime;
 		if (elapsed < 100) {
-			drawPixel(lastMovePos, color);
+			if (drawPixel(lastMovePos, color)) {
+				navigator.vibrate(10);
+			};
+		}
+		if (ev.touches.length === 0) {
+			touchScaling = false;
 		}
 	});
 
 	document.addEventListener("touchmove", (ev) => {
-		let movePos = {x:ev.touches[0].clientX, y:ev.touches[0].clientY};
-		glWindow.move(movePos.x - lastMovePos.x, movePos.y - lastMovePos.y);
-		glWindow.draw();
-		lastMovePos = movePos;
+		if (touchScaling) {
+			let dist = Math.hypot(
+				ev.touches[0].pageX - ev.touches[1].pageX,
+				ev.touches[0].pageY - ev.touches[1].pageY);
+			if (lastScalingDist != null) {
+				let delta = lastScalingDist - dist;
+				if (delta < 0) {
+					zoomIn(1 + Math.abs(delta) * 0.003);
+				} else {
+					zoomOut(1 + Math.abs(delta) * 0.003);
+				}
+			}
+			lastScalingDist = dist;
+		} else {
+			let movePos = { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
+			glWindow.move(movePos.x - lastMovePos.x, movePos.y - lastMovePos.y);
+			glWindow.draw();
+			lastMovePos = movePos;
+		}
 	});
 
-	cvs.addEventListener("contextmenu", () => {return false;});
+	cvs.addEventListener("contextmenu", () => { return false; });
 
 	colorField.addEventListener("change", ev => {
 		let hex = colorField.value.replace(/[^A-Fa-f0-9]/g, "").toUpperCase();
-		hex = hex.substring(0,6);
+		hex = hex.substring(0, 6);
 		while (hex.length < 6) {
 			hex += "0";
 		}
-		color[0] = parseInt(hex.substring(0,2), 16);
-		color[1] = parseInt(hex.substring(2,4), 16);
-		color[2] = parseInt(hex.substring(4,6), 16);
+		color[0] = parseInt(hex.substring(0, 2), 16);
+		color[1] = parseInt(hex.substring(2, 4), 16);
+		color[2] = parseInt(hex.substring(4, 6), 16);
 		hex = "#" + hex;
 		colorField.value = hex;
 		colorSwatch.style.backgroundColor = hex;
@@ -153,21 +179,22 @@ const GUI = (cvs, glWindow, place) => {
 			for (let i = 0; i < oldColor.length; i++) {
 				if (oldColor[i] != color[i]) {
 					place.setPixel(pos.x, pos.y, color);
-					break;
+					return true;
 				}
 			}
 		}
+		return false;
 	}
-	
-	const zoomIn = () => {
+
+	const zoomIn = (factor) => {
 		let zoom = glWindow.getZoom();
-		glWindow.setZoom(zoom * 1.2);
+		glWindow.setZoom(zoom * factor);
 		glWindow.draw();
 	}
-	
-	const zoomOut = () => {
+
+	const zoomOut = (factor) => {
 		let zoom = glWindow.getZoom();
-		glWindow.setZoom(zoom / 1.2);
+		glWindow.setZoom(zoom / factor);
 		glWindow.draw();
 	}
 }
