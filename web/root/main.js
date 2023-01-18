@@ -13,6 +13,7 @@ function main() {
 const GUI = (cvs, glWindow, place) => {
 	let color = new Uint8Array([0, 0, 0]);
 	let dragdown = false;
+	let touchID = 0;
 	let touchScaling = false;
 	let lastMovePos = { x: 0, y: 0 };
 	let lastScalingDist = 0;
@@ -98,15 +99,24 @@ const GUI = (cvs, glWindow, place) => {
 	});
 
 	cvs.addEventListener("touchstart", (ev) => {
+		let thisTouch = touchID;
 		touchstartTime = (new Date()).getTime();
 		lastMovePos = { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
 		if (ev.touches.length === 2) {
 			touchScaling = true;
 			lastScalingDist = null;
 		}
+
+		setTimeout(() => {
+			if (thisTouch == touchID) {
+				pickColor(lastMovePos);
+				navigator.vibrate(200);
+			}
+		}, 350);
 	});
 
 	document.addEventListener("touchend", (ev) => {
+		touchID++;
 		let elapsed = (new Date()).getTime() - touchstartTime;
 		if (elapsed < 100) {
 			if (drawPixel(lastMovePos, color)) {
@@ -119,6 +129,7 @@ const GUI = (cvs, glWindow, place) => {
 	});
 
 	document.addEventListener("touchmove", (ev) => {
+		touchID++;
 		if (touchScaling) {
 			let dist = Math.hypot(
 				ev.touches[0].pageX - ev.touches[1].pageX,

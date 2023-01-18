@@ -55,13 +55,14 @@ body {
 }
 
 #color-swatch {
-	width: 20px;
-	height: 22px;
+	width: 30px;
+	height: 30px;
 	background-color: #000000;
 }
 
 #color-field {
-	height: 20px;
+	font-size: 16px;
+	height: 30px;
 	padding: 1px;
 	border: none;
 	outline: none;
@@ -83,13 +84,13 @@ body {
 }
 
 .zoom-button {
-	width: 30px;
-	height: 30px;
+	width: 36px;
+	height: 36px;
 	border: none;
 	background: none;
 	outline: none;
 	background-color: red;
-	font-size: 22px;
+	font-size: 24px;
 	background-color: #ffffff;
 	border: 1px solid black;
 	cursor: pointer;
