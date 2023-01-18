@@ -6,9 +6,33 @@ The project is online at [pl.g7kk.com](https://pl.g7kk.com).
 
 ## How to host a Place
 
-1. You need to compile [this](https://github.com/rbxb/place/tree/master/cmd/place) Go program using the [Go compiler](https://go.dev/).  
+1. You need to compile [place.go](https://github.com/rbxb/place/tree/master/cmd/place) using the [Go compiler](https://go.dev/).  
+    Run `go build`:
 
-2. Run it and set the **-root** argument to the location of the [web/root](https://github.com/rbxb/place/tree/master/web/root) directory.
+    ```shell
+    cd ./place
+    go build cmd/place/place.go
+    ```
+    alternatively, use `go install`:
+    ```shell
+    cd ./place
+    go install cmd/place/place.go
+    ```
+    
+
+2. Run place and set the **-root** argument to the location of the [web/root](https://github.com/rbxb/place/tree/master/web/root) directory. You can also configure other settings when you run it (see below).
+
+    ```shell
+    place -root web/root -port :8080
+    ```
+    
+3. **If you are using place locally**, you will need to edit [place.js](https://github.com/rbxb/place/blob/master/web/root/place.js).
+    Set **LOCAL_MODE** to true and set the port in the IP adress to the port that you are running the server on.
+    
+    ```javascript
+    const LOCAL_MODE = true;
+    const LOCAL_IP_ADDRESS = "localhost:8080";
+    ```
 
 ### Other configuration options:
   
