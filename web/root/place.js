@@ -1,6 +1,3 @@
-const LOCAL_MODE = false;
-const LOCAL_IP_ADDRESS = "localhost:8080";
-
 class Place {
 	#loaded;
 	#socket;
@@ -19,11 +16,10 @@ class Place {
 	initConnection() {
 		this.#loadingp.innerHTML = "connecting";
 
-		let host;
-		if (LOCAL_MODE) {
-			host = LOCAL_IP_ADDRESS;
-		} else {
-			host = window.location.hostname;
+		let host = window.location.hostname;
+		let port = window.location.port;
+		if (port != "") {
+			host += ":" + port;
 		}
 
 		let wsProt;
@@ -31,11 +27,6 @@ class Place {
 			wsProt = "wss:";
 		} else {
 			wsProt = "ws:";
-		}
-
-		let port = window.location.port;
-		if (port != "") {
-			host += ":" + port;
 		}
 
 		this.#connect(wsProt + "//" + host + "/ws");
