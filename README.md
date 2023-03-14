@@ -25,14 +25,6 @@ The project is online at [pl.g7kk.com](https://pl.g7kk.com).
     ```shell
     place -root web/root -port :8080
     ```
-    
-3. **If you are using place locally**, you will need to edit [place.js](https://github.com/rbxb/place/blob/master/web/root/place.js).
-    Set **LOCAL_MODE** to true and set the port in the IP adress to the port that you are running the server on.
-    
-    ```javascript
-    const LOCAL_MODE = true;
-    const LOCAL_IP_ADDRESS = "localhost:8080";
-    ```
 
 ### Other configuration options:
   
