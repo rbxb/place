@@ -32,20 +32,27 @@ var upgrader = websocket.Upgrader{
 
 type Server struct {
 	sync.RWMutex
-	msgs    chan []byte
-	close   chan int
-	clients []chan []byte
-	img     draw.Image
-	imgBuf  []byte
+	msgs      chan []byte
+	close     chan int
+	clients   []chan []byte
+	img       draw.Image
+	imgBuf    []byte
+	recordBuf []byte
+	enableWL  bool
+	whitelist map[string]uint16
+	record    draw.Image
 }
 
-func NewServer(img draw.Image, count int) *Server {
+func NewServer(img draw.Image, count int, enableWL bool, whitelist map[string]uint16, record draw.Image) *Server {
 	sv := &Server{
-		RWMutex: sync.RWMutex{},
-		msgs:    make(chan []byte),
-		close:   make(chan int),
-		clients: make([]chan []byte, count),
-		img:     img,
+		RWMutex:   sync.RWMutex{},
+		msgs:      make(chan []byte),
+		close:     make(chan int),
+		clients:   make([]chan []byte, count),
+		img:       img,
+		enableWL:  enableWL,
+		whitelist: whitelist,
+		record:    record,
 	}
 	go sv.broadcastLoop()
 	return sv
@@ -59,6 +66,8 @@ func (sv *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		sv.HandleGetStat(w, req)
 	case "ws":
 		sv.HandleSocket(w, req)
+	case "verifykey":
+		sv.HandleSetKeyCookie(w, req)
 	default:
 		http.Error(w, "Not found.", 404)
 	}
@@ -83,6 +92,16 @@ func (sv *Server) HandleGetStat(w http.ResponseWriter, req *http.Request) {
 }
 
 func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
+	allowDraw := true
+	var id uint16 = 0
+	if sv.enableWL {
+		cookie, err := req.Cookie("key")
+		if err == nil {
+			id, allowDraw = sv.whitelist[cookie.Value]
+		} else {
+			allowDraw = false
+		}
+	}
 	sv.Lock()
 	defer sv.Unlock()
 	i := sv.getConnIndex()
@@ -98,8 +117,28 @@ func (sv *Server) HandleSocket(w http.ResponseWriter, req *http.Request) {
 	}
 	ch := make(chan []byte, 8)
 	sv.clients[i] = ch
-	go sv.readLoop(conn, i)
-	go sv.writeLoop(conn, ch)
+	go sv.readLoop(conn, i, allowDraw, id)
+	go sv.writeLoop(conn, ch, allowDraw)
+}
+
+func (sv *Server) HandleSetKeyCookie(w http.ResponseWriter, req *http.Request) {
+	if !sv.enableWL {
+		http.Error(w, "Whitelist is not enabled.", 400)
+		return
+	}
+	key := req.URL.Query().Get("key")
+	if _, ok := sv.whitelist[key]; ok {
+		expiration := time.Now().Add(30 * 24 * time.Hour)
+		http.SetCookie(w, &http.Cookie{
+			Name:     "key",
+			Value:    key,
+			SameSite: http.SameSiteStrictMode,
+			Expires:  expiration,
+		})
+		w.WriteHeader(200)
+	} else {
+		http.Error(w, "Bad key.", 401)
+	}
 }
 
 func (sv *Server) getConnIndex() int {
@@ -136,18 +175,22 @@ func rateLimiter() func() bool {
 	}
 }
 
-func (sv *Server) readLoop(conn *websocket.Conn, i int) {
+func (sv *Server) readLoop(conn *websocket.Conn, i int, allowDraw bool, id uint16) {
 	limiter := rateLimiter()
 	for {
 		_, p, err := conn.ReadMessage()
 		if err != nil {
 			break
 		}
+		if !allowDraw {
+			log.Println("Client kicked for trying to draw without permission.")
+			break
+		}
 		if !limiter() {
 			log.Println("Client kicked for high rate.")
 			break
 		}
-		if sv.handleMessage(p) != nil {
+		if sv.handleMessage(p, id) != nil {
 			log.Println("Client kicked for bad message.")
 			break
 		}
@@ -155,7 +198,12 @@ func (sv *Server) readLoop(conn *websocket.Conn, i int) {
 	sv.close <- i
 }
 
-func (sv *Server) writeLoop(conn *websocket.Conn, ch chan []byte) {
+func (sv *Server) writeLoop(conn *websocket.Conn, ch chan []byte, allowDraw bool) {
+	allowData := []byte{0}
+	if allowDraw {
+		allowData[0] = 1
+	}
+	conn.WriteMessage(websocket.BinaryMessage, allowData)
 	for {
 		if p, ok := <-ch; ok {
 			conn.WriteMessage(websocket.BinaryMessage, p)
@@ -166,8 +214,9 @@ func (sv *Server) writeLoop(conn *websocket.Conn, ch chan []byte) {
 	conn.Close()
 }
 
-func (sv *Server) handleMessage(p []byte) error {
-	if !sv.setPixel(parseEvent(p)) {
+func (sv *Server) handleMessage(p []byte, id uint16) error {
+	x, y, c := parseEvent(p)
+	if !sv.setPixel(x, y, c, id) {
 		return errors.New("invalid placement")
 	}
 	sv.msgs <- p
@@ -208,7 +257,21 @@ func (sv *Server) GetImageBytes() []byte {
 	return sv.imgBuf
 }
 
-func (sv *Server) setPixel(x, y int, c color.Color) bool {
+func (sv *Server) GetRecordBytes() []byte {
+	if !sv.enableWL {
+		panic("Tried to get record bytes when whitelist is disabled.")
+	}
+	if sv.recordBuf == nil {
+		buf := bytes.NewBuffer(nil)
+		if err := png.Encode(buf, sv.record); err != nil {
+			log.Println(err)
+		}
+		sv.recordBuf = buf.Bytes()
+	}
+	return sv.recordBuf
+}
+
+func (sv *Server) setPixel(x, y int, c color.Color, id uint16) bool {
 	rect := sv.img.Bounds()
 	width := rect.Max.X - rect.Min.X
 	height := rect.Max.Y - rect.Min.Y
@@ -217,6 +280,10 @@ func (sv *Server) setPixel(x, y int, c color.Color) bool {
 	}
 	sv.img.Set(x, y, c)
 	sv.imgBuf = nil
+	if sv.enableWL {
+		sv.record.Set(x, y, color.Gray16{id})
+		sv.recordBuf = nil
+	}
 	return true
 }
 

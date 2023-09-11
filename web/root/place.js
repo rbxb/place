@@ -4,6 +4,7 @@ class Place {
 	#loadingp;
 	#uiwrapper;
 	#glWindow;
+	#allowDraw;
 
 	constructor(glWindow) {
 		this.#loaded = false;
@@ -11,6 +12,7 @@ class Place {
 		this.#loadingp = document.querySelector("#loading-p");
 		this.#uiwrapper = document.querySelector("#ui-wrapper");
 		this.#glWindow = glWindow;
+		this.#allowDraw = null;
 	}
 
 	initConnection() {
@@ -30,12 +32,12 @@ class Place {
 		}
 
 		this.#connect(wsProt + "//" + host + "/ws");
-		this.#loadingp.innerHTML = "downloading map";
+		this.#loadingp.innerHTML = "downloading canvas";
 
 		fetch(window.location.protocol + "//" + host + "/place.png")
 			.then(async resp => {
 				if (!resp.ok) {
-					console.error("Error downloading map.");
+					console.error("Error downloading canvas.");
 					return null;
 				}
 
@@ -70,7 +72,15 @@ class Place {
 
 		const socketMessage = async (event) => {
 			let b = await event.data.arrayBuffer();
-			this.#handleSocketSetPixel(b);
+			if (this.#allowDraw == null) {
+				let view = new DataView(b);
+				this.#allowDraw = view.getUint8(0) === 1;
+				if (!this.#allowDraw) {
+					this.#keyPrompt();
+				}
+			} else {
+				this.#handleSocketSetPixel(b);
+			}
 		};
 
 		const socketClose = (event) => {
@@ -89,6 +99,9 @@ class Place {
 	}
 
 	setPixel(x, y, color) {
+		if (!this.#allowDraw) {
+			return;
+		}
 		if (this.#socket != null && this.#socket.readyState == 1) {
 			let b = new Uint8Array(11);
 			this.#putUint32(b.buffer, 0, x);
@@ -139,5 +152,17 @@ class Place {
 	#getUint32(b, offset) {
 		let view = new DataView(b);
 		return view.getUint32(offset, false);
+	}
+
+	#keyPrompt() {
+		let key = prompt("This canvas uses a whitelist.\n\nIf you don't have a key you can still view the canvas but you will not be able to draw.\n\nTo request an access key you can create an issue on the GitHub project.\n\nIf you already have one, enter it here.", "");
+		fetch("./verifykey?key="+key)
+			.then(async resp => {
+				if (resp.ok) {
+					window.location.reload();
+				} else {
+					alert("Bad key.")
+				}
+			});
 	}
 }
