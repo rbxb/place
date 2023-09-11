@@ -54,6 +54,47 @@ The project is online at [pl.g7kk.com](https://pl.g7kk.com).
         
   **-sinterval** int  
         Save interval in seconds. (default 180)
+
+  **-wl** (no value)
+        Enables the whitelist
+
+  **-whitelist** string
+        Path to the whitelist. (default "whitelist.csv")
+
+  **-loadRecord** string
+        Path of the record image to load. (Creates a blank record if not set)
+
+  **-saveRecord** string
+        Path to save the record image to. (default "record.png")
+
+## Whitelist
+
+You can optionally add a whitelist. When the whitelist is enabled, only users with a key will be able to draw on the canvas. The server will also keep a record of who placed each pixel.
+
+To use a whitelist, first create a csv document. Each user will have a personal key and an ID that will identify them in the record. The key should be a long string and the ID should be an integer in the range of [1,65535].
+
+I recomend using uuids for the keys. For example:
+```
+2237701c-7558-4424-95e1-beee4f6a406a,1
+f9e41cf2-0e5d-43f2-bffd-5e2f1aab0a3b,2
+4917ba68-41be-4956-93a7-0563257ff182,3
+79df0674-f6d5-4556-baad-992e81f72bb2,65535
+```
+
+The pixel colors in the record image correspond to the ID in the whitelist.
+
+When you enable the whitelist using the -wl argument, it will look for a file named "whitelist.csv" in the working directory. But you can set your own path as well:
+```shell
+place -wl -whitelist my_white_list.csv
+```
+
+You can also load an existing record image using -loadRecord, which is similar to -load for loading the canvas
+```shell
+place -load place.png -wl -loadRecord record.csv
+```
+
+If you do not include the -wl argument, the whitelist and record will be ignored.
+        
         
 ## Maintenance
 
